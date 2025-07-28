@@ -1,0 +1,161 @@
+from flask import Blueprint, render_template, request, redirect, url_for
+from app import db
+from app.models import System, SystemMapping, Subcategory, Category, PriorityLevel
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+bp = Blueprint('main', __name__)
+
+@bp.route('/')
+def dashboard():
+    view = request.args.get('view', 'all').lower()
+    cutoff = datetime.utcnow() - timedelta(days=90)
+
+    subcategories = Subcategory.query.all()
+    subcat_map = {s.id: s for s in subcategories}
+
+    def get_priority_score(priority_filter):
+        score_by_function = defaultdict(list)
+        for s in subcategories:
+            # Only filter by priority when user selects high/medium/low
+            if priority_filter != 'all':
+                if s.priority is None or s.priority.value.lower() != priority_filter:
+                    continue
+            # Collect every mapping score for this subcategory’s category
+            for m in s.system_mappings:
+                score_by_function[s.category.code].append(m.score)
+        # Compute the average for each function code
+        return {
+            f: round(sum(scores) / len(scores), 2) if scores else None
+            for f, scores in score_by_function.items()
+        }
+
+    # Current avg
+    current_scores = get_priority_score(view)
+
+    # Previous avg from >90 days ago
+    previous_scores = defaultdict(list)
+    for s in subcategories:
+        # Only filter by priority when view != 'all'
+        if view != 'all':
+            if s.priority is None or s.priority.value.lower() != view:
+                continue
+        for m in s.system_mappings:
+            if m.last_reviewed and m.last_reviewed < cutoff:
+                previous_scores[s.category.code].append(m.score)
+    previous_avg = {
+        f: round(sum(scores) / len(scores), 2) if scores else None
+        for f, scores in previous_scores.items()
+    }
+
+    change_scores = {
+        f: round((current_scores.get(f) or 0) - (previous_avg.get(f) or 0), 2)
+        for f in current_scores.keys()
+    }
+
+    return render_template(
+        'dashboard.html',
+        current_scores=current_scores,
+        change_scores=change_scores,
+        view=view
+    )
+
+@bp.route('/systems')
+def list_systems():
+    systems = System.query.all()
+    return render_template('index.html', systems=systems)
+
+@bp.route('/systems/<int:system_id>')
+def system_detail(system_id):
+    system = System.query.get_or_404(system_id)
+    return render_template('system_detail.html', system=system)
+
+@bp.route('/systems/add', methods=['GET', 'POST'])
+def add_system():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form.get('description')
+        owner = request.form.get('owner')
+        notes = request.form.get('notes')
+
+        new_system = System(name=name, description=description, owner=owner, notes=notes)
+        db.session.add(new_system)
+        db.session.commit()
+        return redirect(url_for('main.list_systems'))
+
+    return render_template('add_system.html')
+
+@bp.route('/systems/<int:system_id>/add_mapping', methods=['GET', 'POST'])
+def add_mapping(system_id):
+    system = System.query.get_or_404(system_id)
+    subcategories = Subcategory.query.all()
+
+    if request.method == 'POST':
+        subcategory_id = request.form['subcategory_id']
+        score = int(request.form['score'])
+        reviewer = request.form.get('reviewer')
+        notes = request.form.get('notes')
+
+        new_mapping = SystemMapping(
+            system_id=system.id,
+            subcategory_id=subcategory_id,
+            score=score,
+            reviewer=reviewer,
+            notes=notes,
+            last_reviewed=datetime.utcnow()
+        )
+
+        db.session.add(new_mapping)
+        db.session.commit()
+        return redirect(url_for('main.system_detail', system_id=system.id))
+
+    return render_template('add_mapping.html', system=system, subcategories=subcategories)
+
+@bp.route('/functions/<function>')
+def view_function(function):
+    code = function.upper()
+    category = Category.query.filter_by(code=code).first_or_404()
+    subcategories = Subcategory.query.filter_by(category_id=category.id).all()
+    subcat_ids = [s.id for s in subcategories]
+
+    mappings = SystemMapping.query.filter(
+        SystemMapping.subcategory_id.in_(subcat_ids)
+    ).all()
+
+    system_map = defaultdict(list)
+    for m in mappings:
+        system_map[m.system].append(m)
+
+    return render_template('function_detail.html',
+                           category=category,
+                           system_map=system_map)
+
+@bp.route('/priorities')
+def priorities_overview():
+    # Show all subcategories with their priorities
+    subcategories = Subcategory.query.order_by(Subcategory.category_id).all()
+    return render_template('priorities.html', subcategories=subcategories, view='all')
+
+@bp.route('/priorities/<level>')
+def priorities_filtered(level):
+    # Filter by level: high, medium, low
+    try:
+        p = PriorityLevel[level.upper()]
+    except KeyError:
+        abort(404)
+    subcategories = Subcategory.query.filter_by(priority=p).order_by(Subcategory.category_id).all()
+    return render_template('priorities.html', subcategories=subcategories, view=level)
+
+@bp.route('/priorities/<int:subcat_id>/update', methods=['POST'])
+def update_priority(subcat_id):
+    new_level = request.form.get('priority')
+    try:
+        p = PriorityLevel[new_level.upper()]
+    except KeyError:
+        flash('Invalid priority', 'danger')
+        return redirect(request.referrer or url_for('main.priorities_overview'))
+    subcat = Subcategory.query.get_or_404(subcat_id)
+    subcat.priority = p
+    db.session.commit()
+    flash(f"Priority for {subcat.code} set to {p.name.title()}", 'success')
+    return redirect(request.referrer or url_for('main.priorities_overview'))

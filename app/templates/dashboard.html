@@ -1,0 +1,88 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<h1 class="mb-4">NIST CSF Overview Dashboard</h1>
+
+<div class="mb-3">
+  <form method="get" class="form-inline">
+    <label for="view" class="me-2">View:</label>
+    <select name="view" id="view" onchange="this.form.submit()" class="form-select w-auto d-inline">
+      <option value="all" {% if view == 'all' %}selected{% endif %}>Overall</option>
+      <option value="high" {% if view == 'high' %}selected{% endif %}>High Priority</option>
+      <option value="medium" {% if view == 'medium' %}selected{% endif %}>Medium Priority</option>
+      <option value="low" {% if view == 'low' %}selected{% endif %}>Low Priority</option>
+    </select>
+  </form>
+</div>
+
+<table class="table table-bordered text-center align-middle">
+  <thead>
+    <tr>
+      <th></th>
+      <th style="background-color: #F8F1C8;">GOVERN</th>
+      <th style="background-color: #4DB2E6;">IDENTIFY</th>
+      <th style="background-color: #C079D6;">PROTECT</th>
+      <th style="background-color: #FDBE5A;">DETECT</th>
+      <th style="background-color: #D9241F; color: white;">RESPOND</th>
+      <th style="background-color: #82CF6B;">RECOVER</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Optional section header -->
+    <tr>
+      <th colspan="7" class="text-center bg-light">
+        Scores by NIST Function
+      </th>
+    </tr>
+
+    <!-- 1) Average Score row -->
+    <tr>
+      <th class="text-start">Average Score</th>
+      <td><strong>{{ current_scores['GOVERN'] or '—' }}</strong></td>
+      <td><strong>{{ current_scores['IDENTIFY'] or '—' }}</strong></td>
+      <td><strong>{{ current_scores['PROTECT'] or '—' }}</strong></td>
+      <td><strong>{{ current_scores['DETECT'] or '—' }}</strong></td>
+      <td><strong>{{ current_scores['RESPOND'] or '—' }}</strong></td>
+      <td><strong>{{ current_scores['RECOVER'] or '—' }}</strong></td>
+    </tr>
+
+    <!-- 2) Change over last 90 days row -->
+    <tr>
+      <th class="text-start">Change (90 days)</th>
+      <td>{{ change_scores['GOVERN']|round(2) if change_scores['GOVERN'] else '—' }}</td>
+      <td>{{ change_scores['IDENTIFY']|round(2) if change_scores['IDENTIFY'] else '—' }}</td>
+      <td>{{ change_scores['PROTECT']|round(2) if change_scores['PROTECT'] else '—' }}</td>
+      <td>{{ change_scores['DETECT']|round(2) if change_scores['DETECT'] else '—' }}</td>
+      <td>{{ change_scores['RESPOND']|round(2) if change_scores['RESPOND'] else '—' }}</td>
+      <td>{{ change_scores['RECOVER']|round(2) if change_scores['RECOVER'] else '—' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+{% if priorities %}
+  {% for level, subcats in priorities.items() %}
+    <!-- Your loop code here -->
+  {% endfor %}
+{% else %}
+  <p class="text-muted">No priorities have been set yet.</p>
+{% endif %}
+
+<div class="mt-5">
+  <h5>Legend:</h5>
+  <ul>
+    <li style="color: #F8F1C8;">Govern (Strategy, Oversight)</li>
+    <li style="color: #4DB2E6;">Identify (Asset Management, Risk)</li>
+    <li style="color: #C079D6;">Protect (Access, Awareness, Data Security)</li>
+    <li style="color: #FDBE5A;">Detect (Anomalies, Security Monitoring)</li>
+    <li style="color: #D9241F;">Respond (Incident Handling)</li>
+    <li style="color: #82CF6B;">Recover (Backup, Continuity)</li>
+  </ul>
+</div>
+
+<!-- Placeholder for system detail expansion -->
+<div id="system-details" class="mt-4">
+  <!-- System details will be dynamically loaded here -->
+</div>
+
+{% endblock %}

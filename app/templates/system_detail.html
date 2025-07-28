@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h1>{{ system.name }}</h1>
+<p><strong>Description:</strong> {{ system.description or 'N/A' }}</p>
+<p><strong>Owner:</strong> {{ system.owner or 'N/A' }}</p>
+<p><strong>Notes:</strong> {{ system.notes or 'N/A' }}</p>
+<p><strong>Added On:</strong> {{ system.added_on.strftime('%Y-%m-%d') }}</p>
+
+<a href="{{ url_for('main.add_mapping', system_id=system.id) }}" class="btn btn-primary my-3">Add Mapping</a>
+
+<hr>
+<h2>Mappings</h2>
+{% if system.mappings %}
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Subcategory</th>
+        <th>Score</th>
+        <th>Last Reviewed</th>
+        <th>Reviewer</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for mapping in system.mappings %}
+      <tr>
+        <td>{{ mapping.subcategory.code }} - {{ mapping.subcategory.name }}</td>
+        <td>{{ mapping.score }}</td>
+        <td>{{ mapping.last_reviewed.strftime('%Y-%m-%d') if mapping.last_reviewed else 'N/A' }}</td>
+        <td>{{ mapping.reviewer or 'N/A' }}</td>
+        <td>{{ mapping.notes or 'N/A' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No mappings recorded for this system.</p>
+{% endif %}
+
+<a href="{{ url_for('main.list_systems') }}" class="btn btn-secondary mt-3">Back to List</a>
+{% endblock %}
