@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from app import db
 from app.models import System, SystemMapping, Subcategory, Category, PriorityLevel
 from datetime import datetime, timedelta
@@ -17,17 +17,18 @@ def dashboard():
     def get_priority_score(priority_filter):
         score_by_function = defaultdict(list)
         for s in subcategories:
-            # Only filter by priority when user selects high/medium/low
+            # Apply priority filter only if not 'all'
             if priority_filter != 'all':
                 if s.priority is None or s.priority.value.lower() != priority_filter:
                     continue
-            # Collect every mapping score for this subcategory’s category
             for m in s.system_mappings:
-                score_by_function[s.category.code].append(m.score)
-        # Compute the average for each function code
+                # Group by full function name (uppercase)
+                func_name = s.category.name.upper()
+                score_by_function[func_name].append(m.score)
+        # Compute average for each function
         return {
-            f: round(sum(scores) / len(scores), 2) if scores else None
-            for f, scores in score_by_function.items()
+            func: round(sum(scores)/len(scores), 2) if scores else None
+            for func, scores in score_by_function.items()
         }
 
     # Current avg
@@ -42,7 +43,8 @@ def dashboard():
                 continue
         for m in s.system_mappings:
             if m.last_reviewed and m.last_reviewed < cutoff:
-                previous_scores[s.category.code].append(m.score)
+                func_name = s.category.name.upper()
+                previous_scores[func_name].append(m.score)
     previous_avg = {
         f: round(sum(scores) / len(scores), 2) if scores else None
         for f, scores in previous_scores.items()
@@ -111,6 +113,24 @@ def add_mapping(system_id):
 
     return render_template('add_mapping.html', system=system, subcategories=subcategories)
 
+@bp.route('/systems/<int:system_id>/mappings/<int:mapping_id>/edit', methods=['GET', 'POST'])
+def edit_mapping(system_id, mapping_id):
+    # Load the mapping and all subcategories for selection
+    mapping = SystemMapping.query.get_or_404(mapping_id)
+    subcategories = Subcategory.query.all()
+    if request.method == 'POST':
+        # Update mapping from form values
+        mapping.subcategory_id = int(request.form['subcategory_id'])
+        mapping.score = int(request.form['score'])
+        mapping.reviewer = request.form.get('reviewer')
+        mapping.notes = request.form.get('notes')
+        mapping.last_reviewed = datetime.utcnow()
+        db.session.commit()
+        flash('Mapping updated successfully.', 'success')
+        return redirect(url_for('main.system_detail', system_id=system_id))
+    # GET: render the edit form
+    return render_template('edit_mapping.html', mapping=mapping, subcategories=subcategories)
+
 @bp.route('/functions/<function>')
 def view_function(function):
     code = function.upper()
@@ -146,16 +166,42 @@ def priorities_filtered(level):
     subcategories = Subcategory.query.filter_by(priority=p).order_by(Subcategory.category_id).all()
     return render_template('priorities.html', subcategories=subcategories, view=level)
 
-@bp.route('/priorities/<int:subcat_id>/update', methods=['POST'])
-def update_priority(subcat_id):
-    new_level = request.form.get('priority')
-    try:
-        p = PriorityLevel[new_level.upper()]
-    except KeyError:
-        flash('Invalid priority', 'danger')
-        return redirect(request.referrer or url_for('main.priorities_overview'))
-    subcat = Subcategory.query.get_or_404(subcat_id)
-    subcat.priority = p
+@bp.route('/priorities/update_all', methods=['POST'])
+def update_priorities_bulk():
+    # Iterate over all form fields named priority_<subcat_id>
+    for key, value in request.form.items():
+        if not key.startswith('priority_'):
+            continue
+        subcat_id = int(key.split('_',1)[1])
+        if not value:
+            # Skip undefined
+            continue
+        try:
+            p = PriorityLevel[value.upper()]
+        except KeyError:
+            continue
+        subcat = Subcategory.query.get(subcat_id)
+        if subcat:
+            subcat.priority = p
     db.session.commit()
-    flash(f"Priority for {subcat.code} set to {p.name.title()}", 'success')
-    return redirect(request.referrer or url_for('main.priorities_overview'))
+    flash('Priorities updated successfully.', 'success')
+    return redirect(url_for('main.priorities_overview'))
+
+@bp.route('/systems/<int:system_id>/edit', methods=['GET', 'POST'])
+def edit_system(system_id):
+    # Fetch the system or 404 if not found
+    system = System.query.get_or_404(system_id)
+
+    if request.method == 'POST':
+        # Update fields from the form
+        system.name        = request.form['name']
+        system.description = request.form.get('description')
+        system.owner       = request.form.get('owner')
+        system.notes       = request.form.get('notes')
+
+        db.session.commit()
+        flash('System updated successfully.', 'success')
+        return redirect(url_for('main.system_detail', system_id=system.id))
+
+    # GET: render the edit form
+    return render_template('edit_system.html', system=system)

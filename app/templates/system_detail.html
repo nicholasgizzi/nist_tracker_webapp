@@ -7,7 +7,16 @@
 <p><strong>Notes:</strong> {{ system.notes or 'N/A' }}</p>
 <p><strong>Added On:</strong> {{ system.added_on.strftime('%Y-%m-%d') }}</p>
 
-<a href="{{ url_for('main.add_mapping', system_id=system.id) }}" class="btn btn-primary my-3">Add Mapping</a>
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{{ url_for('main.add_mapping', system_id=system.id) }}"
+     class="btn btn-primary">
+    Add Mapping
+  </a>
+  <a href="{{ url_for('main.edit_system', system_id=system.id) }}"
+     class="btn btn-warning">
+    Edit System
+  </a>
+</div>
 
 <hr>
 <h2>Mappings</h2>
@@ -20,6 +29,7 @@
         <th>Last Reviewed</th>
         <th>Reviewer</th>
         <th>Notes</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -30,6 +40,11 @@
         <td>{{ mapping.last_reviewed.strftime('%Y-%m-%d') if mapping.last_reviewed else 'N/A' }}</td>
         <td>{{ mapping.reviewer or 'N/A' }}</td>
         <td>{{ mapping.notes or 'N/A' }}</td>
+        <td>
+          <a href="{{ url_for('main.edit_mapping', system_id=system.id, mapping_id=mapping.id) }}" class="btn btn-sm btn-primary">
+            Edit
+          </a>
+        </td>
       </tr>
     {% endfor %}
     </tbody>

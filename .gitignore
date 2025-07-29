@@ -1,3 +1,4 @@
 venv/
 nist_tracker.code-workspace
 .DS_Store
+/instance/*.db

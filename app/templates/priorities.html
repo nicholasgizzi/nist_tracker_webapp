@@ -1,45 +1,49 @@
 {% extends 'layout.html' %}
 {% block content %}
 <h1>Priority Management</h1>
-<form class="mb-3 form-inline">
-  <label for="view" class="me-2">View:</label>
-  <select id="view" class="form-select w-auto d-inline" onchange="location = this.value;">
-    <option value="{{ url_for('main.priorities_overview') }}" {% if view=='all' %}selected{% endif %}>All</option>
-    <option value="{{ url_for('main.priorities_filtered', level='high') }}" {% if view=='high' %}selected{% endif %}>High</option>
-    <option value="{{ url_for('main.priorities_filtered', level='medium') }}" {% if view=='medium' %}selected{% endif %}>Medium</option>
-    <option value="{{ url_for('main.priorities_filtered', level='low') }}" {% if view=='low' %}selected{% endif %}>Low</option>
-  </select>
-</form>
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Function</th>
-      <th>Subcategory</th>
-      <th>Identifier</th>
-      <th>Priority</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for subcat in subcategories %}
-    <tr>
-      <td>{{ subcat.category.name }}</td>
-      <td>{{ subcat.name }}</td>
-      <td>{{ subcat.code }}</td>
-      <td>
-        <form action="{{ url_for('main.update_priority', subcat_id=subcat.id) }}" method="post" class="d-inline">
-          <select name="priority" class="form-select d-inline w-auto">
-            {% for level in ['LOW','MEDIUM','HIGH'] %}
-            <option value="{{ level }}" {% if subcat.priority and subcat.priority.name==level %}selected{% endif %}>{{ level.title() }}</option>
-            {% endfor %}
+<form method="post" action="{{ url_for('main.update_priorities_bulk') }}">
+  <div class="mb-3 form-inline">
+    <label for="view" class="me-2">View:</label>
+    <select id="view" class="form-select w-auto d-inline" onchange="location=this.value;">
+      <option value="{{ url_for('main.priorities_overview') }}" {% if view=='all' %}selected{% endif %}>All</option>
+      <option value="{{ url_for('main.priorities_filtered', level='high') }}" {% if view=='high' %}selected{% endif %}>High</option>
+      <option value="{{ url_for('main.priorities_filtered', level='medium') }}" {% if view=='medium' %}selected{% endif %}>Medium</option>
+      <option value="{{ url_for('main.priorities_filtered', level='low') }}" {% if view=='low' %}selected{% endif %}>Low</option>
+    </select>
+  </div>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Function</th>
+        <th>Subcategory</th>
+        <th>Identifier</th>
+        <th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for subcat in subcategories %}
+      <tr>
+        <td style="background-color: {{ {
+            'GV':'#F8F1C8', 'ID':'#4DB2E6', 'PR':'#C079D6',
+            'DE':'#FDBE5A', 'RS':'#D9241F', 'RC':'#82CF6B'
+          }[subcat.category.code] }};">
+          {{ subcat.category.name }}
+        </td>
+        <td>{{ subcat.name }}</td>
+        <td>{{ subcat.code }}</td>
+        <td>
+          <select name="priority_{{ subcat.id }}" class="form-select w-auto">
+            <option value="" {% if not subcat.priority %}selected{% endif %}>--</option>
+            <option value="LOW" {% if subcat.priority and subcat.priority.name=='LOW' %}selected{% endif %}>Low</option>
+            <option value="MEDIUM" {% if subcat.priority and subcat.priority.name=='MEDIUM' %}selected{% endif %}>Medium</option>
+            <option value="HIGH" {% if subcat.priority and subcat.priority.name=='HIGH' %}selected{% endif %}>High</option>
           </select>
-      </td>
-      <td>
-          <button type="submit" class="btn btn-sm btn-primary">Save</button>
-        </form>
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <button type="submit" class="btn btn-primary">Save All</button>
+</form>
 {% endblock %}

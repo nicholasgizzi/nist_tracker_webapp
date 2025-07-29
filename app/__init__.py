@@ -7,6 +7,7 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'dev-secret'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nist_tracker.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
