@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from .models import Category
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -16,5 +17,11 @@ def create_app():
 
     from . import routes
     app.register_blueprint(routes.bp)
+
+    @app.context_processor
+    def inject_nist_functions():
+        # Make all NIST function categories available to templates
+        funcs = Category.query.order_by(Category.id).all()
+        return dict(nist_functions=funcs)
 
     return app
