@@ -1,14 +1,14 @@
 {% extends 'layout.html' %}
 {% block content %}
 <h1>Priority Management</h1>
-<form method="post" action="{{ url_for('main.update_priorities_bulk') }}">
+<form method="post" action="{{ url_for('priorities.update_priorities_bulk') }}">
   <div class="mb-3 form-inline">
     <label for="view" class="me-2">View:</label>
     <select id="view" class="form-select w-auto d-inline" onchange="location=this.value;">
-      <option value="{{ url_for('main.priorities_overview') }}" {% if view=='all' %}selected{% endif %}>All</option>
-      <option value="{{ url_for('main.priorities_filtered', level='high') }}" {% if view=='high' %}selected{% endif %}>High</option>
-      <option value="{{ url_for('main.priorities_filtered', level='medium') }}" {% if view=='medium' %}selected{% endif %}>Medium</option>
-      <option value="{{ url_for('main.priorities_filtered', level='low') }}" {% if view=='low' %}selected{% endif %}>Low</option>
+      <option value="{{ url_for('priorities.priorities_overview') }}" {% if view=='all' %}selected{% endif %}>All</option>
+      <option value="{{ url_for('priorities.priorities_filtered', level='high') }}" {% if view=='high' %}selected{% endif %}>High</option>
+      <option value="{{ url_for('priorities.priorities_filtered', level='medium') }}" {% if view=='medium' %}selected{% endif %}>Medium</option>
+      <option value="{{ url_for('priorities.priorities_filtered', level='low') }}" {% if view=='low' %}selected{% endif %}>Low</option>
     </select>
   </div>
 
@@ -30,8 +30,18 @@
           }[subcat.category.code] }};">
           {{ subcat.category.name }}
         </td>
-        <td>{{ subcat.name }}</td>
-        <td>{{ subcat.code }}</td>
+        <td>
+          <a href="{{ url_for('functions.view_function', function=subcat.category.code|lower, subcategory_id=subcat.id) }}"
+             class="text-decoration-none">
+            {{ subcat.name }}
+          </a>
+        </td>
+        <td>
+          <a href="{{ url_for('functions.view_function', function=subcat.category.code|lower, subcategory_id=subcat.id) }}"
+             class="text-decoration-none">
+            {{ subcat.code }}
+          </a>
+        </td>
         <td>
           <select name="priority_{{ subcat.id }}" class="form-select w-auto">
             <option value="" {% if not subcat.priority %}selected{% endif %}>--</option>

@@ -25,6 +25,8 @@
     <textarea class="form-control" name="notes" id="notes"></textarea>
   </div>
   <button type="submit" class="btn btn-success">Save Mapping</button>
-  <a href="{{ url_for('main.system_detail', system_id=system.id) }}" class="btn btn-secondary">Cancel</a>
+  <a href="{{ url_for('systems.system_detail', system_id=system.id) }}" class="btn btn-secondary">
+    Cancel
+  </a>
 </form>
 {% endblock %}
