@@ -20,4 +20,4 @@ flask db upgrade
 python seed.py # this seeds the database with the NIST CSF framework functions, categories, and labels
 
 6. run the app
-gunicorn -w 4 -b 127.0.0.1:5001 "run:create_app()"
+flask run
