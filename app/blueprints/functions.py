@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request
 from collections import defaultdict
 from app.models import Category, Subcategory, SystemMapping
+from flask_login import login_required
 
 bp = Blueprint('functions', __name__, url_prefix='/functions')
 
 @bp.route('/<function>')
+@login_required
 def view_function(function):
     code = function.upper()
     cat = Category.query.filter_by(code=code).first_or_404()

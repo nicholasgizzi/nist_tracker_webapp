@@ -3,10 +3,12 @@ from app import db
 from app.models import System, SystemMapping
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
+from flask_login import login_required
 
 bp = Blueprint('systems', __name__, url_prefix='/systems')
 
 @bp.route('')
+@login_required
 def list_systems():
     systems = System.query.all()
     return render_template('index.html', systems=systems)

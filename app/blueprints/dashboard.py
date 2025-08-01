@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, request
 from app.models import Category, Subcategory, SystemMapping
 from datetime import datetime, timedelta
 from collections import defaultdict
+from flask_login import login_required
 
 bp = Blueprint('dashboard', __name__)
 
 @bp.route('/')
+@login_required
 def dashboard():
     view = request.args.get('view', 'all').lower()
     cutoff = datetime.utcnow() - timedelta(days=90)

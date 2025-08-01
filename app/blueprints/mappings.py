@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app import db
 from app.models import System, SystemMapping
 from datetime import datetime
+from flask_login import login_required
 
 bp = Blueprint('mappings', __name__, url_prefix='/systems/<int:system_id>/mappings')
 
 @bp.route('/add_mapping', methods=['GET','POST'])
+@login_required
 def add_mapping(system_id):
     system = System.query.get_or_404(system_id)
     if request.method=='POST':

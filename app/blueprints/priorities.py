@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app import db
 from app.models import Subcategory, PriorityLevel
 from sqlalchemy.exc import SQLAlchemyError
+from flask_login import login_required
 
 bp = Blueprint('priorities', __name__, url_prefix='/priorities')
 
 @bp.route('')
+@login_required
 def priorities_overview():
     subs = Subcategory.query.order_by(Subcategory.category_id).all()
     return render_template('priorities.html', subcategories=subs, view='all')

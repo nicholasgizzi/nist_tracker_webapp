@@ -2,9 +2,11 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 
 db = SQLAlchemy()
 migrate = Migrate()
+login_manager = LoginManager()
 
 # define NIST function codes, display names, and header colors
 FUNCTION_DEFS = [
@@ -29,17 +31,25 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(app.instance_path, 'nist_tracker.db')}",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
+    # Load instance/config.py
+    app.config.from_pyfile('config.py', silent=True)
 
     db.init_app(app)
     migrate.init_app(app, db)
+    # Initialize Flask Login
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = "Please log in to continue."
 
     # then register your blueprints (as before)…
+    from app.blueprints.auth       import auth_bp
     from app.blueprints.dashboard  import bp as dashboard_bp
     from app.blueprints.systems    import bp as systems_bp
     from app.blueprints.mappings   import bp as mappings_bp
     from app.blueprints.functions  import bp as functions_bp
     from app.blueprints.priorities import bp as priorities_bp
-
+    
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(systems_bp)
     app.register_blueprint(mappings_bp)
